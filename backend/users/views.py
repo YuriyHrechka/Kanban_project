@@ -8,10 +8,11 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 class RegisterAPIView(APIView):
     """Register a new user and return tokens."""
+    serializer_class = UserAuthSerializer
 
     def post(self, request):
-        serializer = UserAuthSerializer(data=request.data)
-
+        serializer = self.serializer_class(data=request.data)
+        
         if serializer.is_valid():
             user = serializer.save()
             refresh = RefreshToken.for_user(user)
