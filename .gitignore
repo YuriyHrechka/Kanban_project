@@ -1,0 +1,9 @@
+.env
+.vscode/
+Thumbs.db
+.idea/
+*.swp
+*.swo
+__pycache__/
+*.pyc
+.venv/
