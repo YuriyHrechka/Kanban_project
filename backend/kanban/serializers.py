@@ -5,6 +5,11 @@ from common.enums.errors import ErrorEnum
 
 
 class BoardSerializer(serializers.ModelSerializer):
+    """
+    Serializer for the Board model.
+    Provides validation and serialization for board-related fields.
+    """
+
     class Meta:
         model = Board
         fields = [
@@ -20,6 +25,11 @@ class BoardSerializer(serializers.ModelSerializer):
 
 
 class ColumnSerializer(serializers.ModelSerializer):
+    """
+    Serializer for the Column model.
+    Provides validation and serialization for column-related fields.
+    """
+
     class Meta:
         model = Column
         fields = ["id", "title", "board", "position", "created_at"]
@@ -27,6 +37,12 @@ class ColumnSerializer(serializers.ModelSerializer):
 
 
 class CardSerializer(serializers.ModelSerializer):
+    """
+    Serializer for the Card model.
+    Provides validation and serialization for card-related fields,
+    including custom validation for priority.
+    """
+
     class Meta:
         model = Card
         fields = [
@@ -43,6 +59,13 @@ class CardSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "created_at", "updated_at"]
 
     def validate_priority(self, value):
+        """
+        Validate the priority field to ensure it matches allowed values.
+
+        :param value: The provided priority value.
+        :return: The validated priority value if valid.
+        :raises serializers.ValidationError: If the value is not a valid priority.
+        """
         if value not in Priority.values:
             raise serializers.ValidationError(ErrorEnum.INVALID_PRIORITY.value)
         return value

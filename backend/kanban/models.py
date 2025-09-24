@@ -3,6 +3,9 @@ from common.choices.priority import Priority
 
 
 class Board(models.Model):
+    """
+    Represents a Kanban board owned by a user.
+    """
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
@@ -15,6 +18,9 @@ class Board(models.Model):
 
 
 class Column(models.Model):
+    """
+    Represents a column within a board (e.g., To Do, In Progress, Done).
+    """
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=255)
     board = models.ForeignKey(Board, on_delete=models.CASCADE, related_name="columns")
@@ -23,6 +29,9 @@ class Column(models.Model):
 
 
 class Card(models.Model):
+    """
+    Represents a card (task/item) inside a column.
+    """
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)

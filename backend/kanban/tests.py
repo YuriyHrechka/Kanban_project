@@ -10,7 +10,14 @@ User = get_user_model()
 
 
 class KanbanAPITests(TestCase):
+    """
+    API tests for the Kanban app covering boards, columns and cards CRUD and permission scopes.
+    """
+
     def setUp(self):
+        """
+        Create test client, a user and authenticate the client for subsequent requests.
+        """
         self.client = APIClient()
         self.user = User.objects.create_user(username="kbuser", password="P@ssw0rd123")
         # obtain token via the auth endpoints
@@ -23,6 +30,9 @@ class KanbanAPITests(TestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.access}")
 
     def test_board_create_list_and_owner_filtering(self):
+        """
+        Ensure a board can be created, listed and is visible only to its owner in list results.
+        """
         board_url = reverse("board-list")
         data = {"title": "Test Board", "description": "desc"}
         resp = self.client.post(board_url, data, format="json")
@@ -42,6 +52,9 @@ class KanbanAPITests(TestCase):
         self.assertIn(board_id, ids)
 
     def test_column_and_card_crud_and_scope(self):
+        """
+        Test creating columns and cards, validating priority and ensuring proper validation errors.
+        """
         # create board
         board = self.client.post(
             reverse("board-list"), {"title": "B1"}, format="json"
@@ -81,6 +94,9 @@ class KanbanAPITests(TestCase):
         )
 
     def test_cannot_create_column_or_card_on_another_users_board(self):
+        """
+        Ensure users cannot create columns or cards on boards/columns they don't own.
+        """
         # create a board as first user
         board = self.client.post(
             reverse("board-list"), {"title": "OwnerBoard"}, format="json"
@@ -128,8 +144,3 @@ class KanbanAPITests(TestCase):
             card_resp.status_code,
             (status.HTTP_403_FORBIDDEN, status.HTTP_400_BAD_REQUEST),
         )
-
-
-from django.test import TestCase
-
-# Create your tests here.

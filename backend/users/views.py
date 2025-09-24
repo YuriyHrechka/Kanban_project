@@ -10,13 +10,19 @@ from rest_framework.throttling import ScopedRateThrottle
 
 
 class RegisterAPIView(APIView):
-    """Register a new user and return tokens."""
+    """Register a new user and return authentication tokens."""
 
     serializer_class = UserAuthSerializer
     throttle_classes = [ScopedRateThrottle]
-    throttle_scope = 'register'
+    throttle_scope = "register"
 
     def post(self, request):
+        """
+        Handle user registration.
+
+        :param request: The HTTP request containing user registration data.
+        :return: A JSON response with refresh/access tokens and user details.
+        """
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
@@ -39,6 +45,12 @@ class ProfileAPIView(APIView):
     serializer_class = UserProfileSerializer
 
     def get(self, request):
+        """
+        Retrieve the profile of the authenticated user.
+
+        :param request: The HTTP request made by an authenticated user.
+        :return: A JSON response with the user's profile data.
+        """
         user = request.user
         serializer = self.serializer_class(user)
         return Response(serializer.data, status=status.HTTP_200_OK)

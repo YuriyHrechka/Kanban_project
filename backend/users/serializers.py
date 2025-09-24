@@ -7,8 +7,7 @@ from django.db import IntegrityError
 
 class UserAuthSerializer(serializers.ModelSerializer):
     """
-    The UserAuthSerializer class in Python handles user authentication data serialization and password
-    hashing during user creation.
+    Serializer for user registration and authentication.
     """
 
     username = serializers.CharField(max_length=150)
@@ -23,14 +22,10 @@ class UserAuthSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         """
-        The `create` function creates a new user with the provided validated data and password in a Django
-        custom user model.
+        Create a new user with the provided validated data.
 
-        Args:
-          validated_data:
-
-        Returns:
-          The `user` object is being returned.
+        :param validated_data: The validated data from the serializer.
+        :return: The created user instance.
         """
         password = validated_data.pop("password", None)
 
@@ -49,8 +44,10 @@ class UserAuthSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         """
-        The function `validate` checks the password attribute and then calls the superclass's validate
-        method.
+        Validate the provided attributes, including password confirmation and strength.
+
+        :param attrs: The incoming attributes to validate.
+        :return: The validated attributes.
         """
         password = attrs.get("password")
         if not password:
@@ -66,6 +63,12 @@ class UserAuthSerializer(serializers.ModelSerializer):
         return super().validate(attrs)
 
     def validate_username(self, value):
+        """
+        Validate that the username is not already taken.
+
+        :param value: The username to validate.
+        :return: The validated username.
+        """
         qs = CustomUser.objects.filter(username=value)
 
         if getattr(self, "instance", None):
@@ -76,6 +79,10 @@ class UserAuthSerializer(serializers.ModelSerializer):
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
+    """
+    Serializer for returning basic user profile data.
+    """
+
     class Meta:
         model = CustomUser
         fields = ["id", "username"]
