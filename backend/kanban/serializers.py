@@ -16,7 +16,7 @@ class BoardSerializer(serializers.ModelSerializer):
             "updated_at",
             "is_archived",
         ]
-        read_only_fields = ["id", "created_at", "updated_at"]
+        read_only_fields = ["id", "created_at", "updated_at", "owner"]
 
 
 class ColumnSerializer(serializers.ModelSerializer):

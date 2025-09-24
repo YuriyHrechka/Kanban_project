@@ -2,6 +2,7 @@ from rest_framework import serializers
 from .models import CustomUser
 from django.contrib.auth.password_validation import validate_password
 from common.enums.errors import ErrorEnum
+from django.db import IntegrityError
 
 
 class UserAuthSerializer(serializers.ModelSerializer):
@@ -12,10 +13,13 @@ class UserAuthSerializer(serializers.ModelSerializer):
 
     username = serializers.CharField(max_length=150)
     password = serializers.CharField(max_length=128, write_only=True)
+    confirm_password = serializers.CharField(
+        max_length=128, write_only=True, required=False
+    )
 
     class Meta:
         model = CustomUser
-        fields = ["username", "password"]
+        fields = ["username", "password", "confirm_password"]
 
     def create(self, validated_data):
         """
@@ -30,8 +34,17 @@ class UserAuthSerializer(serializers.ModelSerializer):
         """
         password = validated_data.pop("password", None)
 
-        user = CustomUser.objects.create_user(**validated_data, password=password)
-        user.is_active = True
+        try:
+            user = CustomUser.objects.create_user(**validated_data, password=password)
+        except IntegrityError:
+            raise serializers.ValidationError(
+                {"username": ErrorEnum.USERNAME_IS_TAKEN.value}
+            )
+
+        if not user.is_active:
+            user.is_active = True
+            user.save(update_fields=["is_active"])
+
         return user
 
     def validate(self, attrs):
@@ -39,11 +52,24 @@ class UserAuthSerializer(serializers.ModelSerializer):
         The function `validate` checks the password attribute and then calls the superclass's validate
         method.
         """
-        validate_password(attrs.get("password"))
+        password = attrs.get("password")
+        if not password:
+            raise serializers.ValidationError({"password": ErrorEnum.FIELD_REQUIRED})
+
+        confirm = attrs.get("confirm_password")
+        if confirm is not None and password != confirm:
+            raise serializers.ValidationError(
+                {"confirm_password": ErrorEnum.PASSWORDS_DONT_MATCH.value}
+            )
+
+        validate_password(password)
         return super().validate(attrs)
 
     def validate_username(self, value):
         qs = CustomUser.objects.filter(username=value)
+
+        if getattr(self, "instance", None):
+            qs = qs.exclude(pk=self.instance.pk)
         if qs.exists():
             raise serializers.ValidationError(ErrorEnum.USERNAME_IS_TAKEN.value)
         return value

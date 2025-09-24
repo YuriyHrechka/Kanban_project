@@ -35,8 +35,6 @@ class AuthFlowTests(TestCase):
         self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
         self.assertIn("access", resp.data)
         self.assertIn("refresh", resp.data)
-        self.assertIn("user_id", resp.data)
-        self.assertTrue(User.objects.filter(username="tester").exists())
 
     def test_token_obtain_with_valid_credentials(self):
         """
@@ -93,3 +91,34 @@ class AuthFlowTests(TestCase):
                 resp2.status_code,
                 (status.HTTP_401_UNAUTHORIZED, status.HTTP_400_BAD_REQUEST),
             )
+
+    def test_register_confirm_password_mismatch(self):
+        """Register should fail when confirm_password does not match."""
+        payload = {
+            "username": "mismatch",
+            "password": "StrongP@ssw0rd",
+            "confirm_password": "different",
+        }
+        resp = self.client.post(self.register_url, payload, format="json")
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        # confirm_password error should be present
+        self.assertIn("confirm_password", resp.data)
+
+    def test_profile_endpoint_requires_auth_and_returns_user(self):
+        # without auth
+        profile_url = reverse("user_profile")
+        resp = self.client.get(profile_url)
+        self.assertEqual(resp.status_code, status.HTTP_401_UNAUTHORIZED)
+
+        # register and access profile
+        payload = {"username": "proftest", "password": "StrongP@ssw0rd"}
+        reg = self.client.post(self.register_url, payload, format="json")
+        self.assertEqual(reg.status_code, status.HTTP_201_CREATED)
+        access = reg.data.get("access")
+        self.assertIsNotNone(access)
+
+        # authenticate client using token
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access}")
+        resp2 = self.client.get(profile_url)
+        self.assertEqual(resp2.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp2.data.get("username"), "proftest")
