@@ -6,10 +6,10 @@ from common.enums.errors import ErrorEnum
 
 class UserAuthSerializer(serializers.ModelSerializer):
     """
-	The UserAuthSerializer class in Python handles user authentication data serialization and password
-  	hashing during user creation.
-  	"""
-   
+    The UserAuthSerializer class in Python handles user authentication data serialization and password
+    hashing during user creation.
+    """
+
     username = serializers.CharField(max_length=150)
     password = serializers.CharField(max_length=128, write_only=True)
 
@@ -47,3 +47,10 @@ class UserAuthSerializer(serializers.ModelSerializer):
         if qs.exists():
             raise serializers.ValidationError(ErrorEnum.USERNAME_IS_TAKEN.value)
         return value
+
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ["id", "username"]
+        read_only_fields = ["id", "username"]
