@@ -32,7 +32,13 @@ class KanbanAPITests(TestCase):
         # list should include created board
         resp2 = self.client.get(board_url)
         self.assertEqual(resp2.status_code, status.HTTP_200_OK)
-        ids = [b["id"] for b in resp2.data]
+        data = resp2.data
+        # if pagination is enabled, results will be present
+        if isinstance(data, dict) and "results" in data:
+            items = data["results"]
+        else:
+            items = data
+        ids = [b["id"] for b in items]
         self.assertIn(board_id, ids)
 
     def test_column_and_card_crud_and_scope(self):
@@ -72,6 +78,55 @@ class KanbanAPITests(TestCase):
         msg = str(bad.data.get("priority"))
         self.assertTrue(
             ErrorEnum.INVALID_PRIORITY.value in msg or "not a valid choice" in msg
+        )
+
+    def test_cannot_create_column_or_card_on_another_users_board(self):
+        # create a board as first user
+        board = self.client.post(
+            reverse("board-list"), {"title": "OwnerBoard"}, format="json"
+        ).data
+        board_id = board["id"]
+
+        # create second user and token
+        other = User.objects.create_user(username="other", password="P@ssw0rd456")
+        token_url = reverse("token_obtain_pair")
+        resp = APIClient().post(
+            token_url, {"username": "other", "password": "P@ssw0rd456"}, format="json"
+        )
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        other_access = resp.data.get("access")
+
+        client2 = APIClient()
+        client2.credentials(HTTP_AUTHORIZATION=f"Bearer {other_access}")
+
+        # other user should NOT be able to create a column on first user's board
+        col_resp = client2.post(
+            reverse("column-list"),
+            {"title": "X", "board": board_id, "position": 1},
+            format="json",
+        )
+        self.assertIn(
+            col_resp.status_code,
+            (status.HTTP_403_FORBIDDEN, status.HTTP_400_BAD_REQUEST),
+        )
+
+        # Similarly cannot create a card inside a column owned by first user
+        # Create a column as owner
+        col = self.client.post(
+            reverse("column-list"),
+            {"title": "OwnerCol", "board": board_id, "position": 1},
+            format="json",
+        ).data
+        col_id = col["id"]
+
+        card_resp = client2.post(
+            reverse("card-list"),
+            {"title": "BadCard", "column": col_id, "position": 1, "priority": "low"},
+            format="json",
+        )
+        self.assertIn(
+            card_resp.status_code,
+            (status.HTTP_403_FORBIDDEN, status.HTTP_400_BAD_REQUEST),
         )
 
 
