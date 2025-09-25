@@ -1,7 +1,13 @@
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 from .models import Card, Column, Board
-from .serializers import CardSerializer, ColumnSerializer, BoardSerializer
+from .serializers import (
+    BoardDetailSerializer,
+    CardSerializer,
+    ColumnDetailSerializer,
+    ColumnSerializer,
+    BoardSerializer,
+)
 from common.enums.errors import ErrorEnum
 from rest_framework.exceptions import PermissionDenied
 
@@ -15,7 +21,6 @@ class BoardViewSet(viewsets.ModelViewSet):
     """
 
     queryset = Board.objects.all()
-    serializer_class = BoardSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
@@ -24,7 +29,14 @@ class BoardViewSet(viewsets.ModelViewSet):
 
         :return: Queryset of boards belonging to the current user.
         """
-        return self.queryset.filter(owner=self.request.user)
+        return Board.objects.filter(owner=self.request.user).prefetch_related(
+            "columns__cards"
+        )
+
+    def get_serializer_class(self):
+        if self.action == "retrieve":
+            return BoardDetailSerializer
+        return BoardSerializer
 
     def perform_create(self, serializer):
         """
@@ -45,7 +57,6 @@ class ColumnViewSet(viewsets.ModelViewSet):
     """
 
     queryset = Column.objects.all()
-    serializer_class = ColumnSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
@@ -54,7 +65,13 @@ class ColumnViewSet(viewsets.ModelViewSet):
 
         :return: Queryset of columns for the current user.
         """
-        return self.queryset.filter(board__owner=self.request.user)
+
+        return self.queryset.filter(board__owner=self.request.user).prefetch_related("cards")
+
+    def get_serializer_class(self):
+        if self.action == "retrieve":
+            return ColumnDetailSerializer
+        return ColumnSerializer
 
     def perform_create(self, serializer):
         """

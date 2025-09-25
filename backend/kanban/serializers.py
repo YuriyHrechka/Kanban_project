@@ -4,6 +4,52 @@ from common.choices.priority import Priority
 from common.enums.errors import ErrorEnum
 
 
+class CardNestedSerializer(serializers.ModelSerializer):
+    """Lightweight card serializer for nested use inside Column."""
+
+    class Meta:
+        model = Card
+        fields = [
+            "id",
+            "title",
+            "description",
+            "position",
+            "due_date",
+            "priority",
+        ]
+        read_only_fields = fields
+
+
+class ColumnNestedSerializer(serializers.ModelSerializer):
+    """Column serializer with nested cards."""
+
+    cards = CardNestedSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Column
+        fields = ["id", "title", "position", "cards"]
+        read_only_fields = fields
+
+
+class BoardDetailSerializer(serializers.ModelSerializer):
+    """Board serializer with nested columns and cards."""
+
+    columns = ColumnNestedSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Board
+        fields = [
+            "id",
+            "title",
+            "description",
+            "is_archived",
+            "created_at",
+            "updated_at",
+            "columns",
+        ]
+        read_only_fields = fields
+
+
 class BoardSerializer(serializers.ModelSerializer):
     """
     Serializer for the Board model.
@@ -22,6 +68,17 @@ class BoardSerializer(serializers.ModelSerializer):
             "is_archived",
         ]
         read_only_fields = ["id", "created_at", "updated_at", "owner"]
+
+
+class ColumnDetailSerializer(serializers.ModelSerializer):
+    """Column serializer with nested cards."""
+
+    cards = CardNestedSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Column
+        fields = ["id", "title", "board", "position", "created_at", "cards"]
+        read_only_fields = ["id", "created_at", "board"]
 
 
 class ColumnSerializer(serializers.ModelSerializer):

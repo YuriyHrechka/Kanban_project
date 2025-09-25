@@ -4,7 +4,12 @@ services:
       context: backend/
       dockerfile: Dockerfile
     container_name: kanban_backend
-    command: python manage.py runserver 0.0.0.0:8000
+    command: >
+      bash -c "
+        sleep 5 &&
+        python manage.py makemigrations &&
+        python manage.py migrate &&
+        python manage.py runserver 0.0.0.0:8000"
     volumes:
       - ./backend:/app
     ports:
