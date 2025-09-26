@@ -1,5 +1,7 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import action
+from rest_framework.response import Response
 from .models import Card, Column, Board
 from .serializers import (
     BoardDetailSerializer,
@@ -66,7 +68,9 @@ class ColumnViewSet(viewsets.ModelViewSet):
         :return: Queryset of columns for the current user.
         """
 
-        return self.queryset.filter(board__owner=self.request.user).prefetch_related("cards")
+        return self.queryset.filter(board__owner=self.request.user).prefetch_related(
+            "cards"
+        )
 
     def get_serializer_class(self):
         if self.action == "retrieve":
@@ -154,3 +158,49 @@ class CardViewSet(viewsets.ModelViewSet):
                 ErrorEnum.CANNOT_MOVE_UPDATE_CARD_TO_ANOTHER_USERS_COLUMN.value
             )
         serializer.save()
+
+    @action(detail=True, methods=["post"])
+    def move(self, request, pk=None):
+        """
+        Move a card to another column and/or update its position.
+
+        :param request: The HTTP request containing JSON body with
+                        `"column"` (column id) and `"position"` (integer).
+        :param pk: The primary key of the card being moved.
+
+        :return: A Response containing the updated serialized card data,
+                or an error message if validation fails.
+        """
+        card = self.get_object()
+        column_id = request.data.get("column")
+        position = request.data.get("position")
+
+        if column_id is None:
+            return Response(
+                {"detail": "column is required"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            target_column = Column.objects.get(pk=column_id)
+        except Column.DoesNotExist:
+            return Response(
+                {"detail": "target column not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        if target_column.board.owner != request.user:
+            raise PermissionDenied(
+                ErrorEnum.CANNOT_MOVE_UPDATE_CARD_TO_ANOTHER_USERS_COLUMN.value
+            )
+
+        card.column = target_column
+        if position is not None:
+            try:
+                card.position = int(position)
+            except (TypeError, ValueError):
+                return Response(
+                    {"detail": "invalid position"}, status=status.HTTP_400_BAD_REQUEST
+                )
+
+        card.save()
+        serializer = self.get_serializer(card)
+        return Response(serializer.data)

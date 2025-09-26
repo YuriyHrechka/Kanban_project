@@ -28,6 +28,7 @@ class UserAuthSerializer(serializers.ModelSerializer):
         :return: The created user instance.
         """
         password = validated_data.pop("password", None)
+        validated_data.pop("confirm_password", None)
 
         try:
             user = CustomUser.objects.create_user(**validated_data, password=password)
