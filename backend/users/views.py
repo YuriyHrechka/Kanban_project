@@ -5,15 +5,19 @@ from rest_framework import status
 from .serializers import UserAuthSerializer, UserProfileSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.throttling import ScopedRateThrottle
 
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 
+@method_decorator(csrf_exempt, name="dispatch")
 class RegisterAPIView(APIView):
     """Register a new user and return authentication tokens."""
 
     serializer_class = UserAuthSerializer
     throttle_classes = [ScopedRateThrottle]
+    permission_classes = [AllowAny]
     throttle_scope = "register"
 
     def post(self, request):

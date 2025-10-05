@@ -12,6 +12,8 @@ from .serializers import (
 )
 from common.enums.errors import ErrorEnum
 from rest_framework.exceptions import PermissionDenied
+from django.db import transaction
+from django.db.models import F
 
 
 class BoardViewSet(viewsets.ModelViewSet):
@@ -106,6 +108,62 @@ class ColumnViewSet(viewsets.ModelViewSet):
                 ErrorEnum.CANNOT_MOVE_UPDATE_COLUMN_TO_ANOTHER_USERS_BOARD.value
             )
         serializer.save()
+
+    @action(detail=True, methods=["post"])
+    def move(self, request, pk=None):
+        """
+        Move a column only within its current board.
+        Expects payload: {"position": <int>}
+        """
+        column = self.get_object()
+        source_board = column.board
+
+        raw_pos = request.data.get("position")
+        try:
+            position = int(raw_pos)
+        except (TypeError, ValueError):
+            return Response(
+                {"detail": "Invalid or missing 'position' (must be integer)."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if position < 0:
+            return Response(
+                {"detail": "'position' must be >= 0."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        with transaction.atomic():
+            qs = Column.objects.select_for_update().filter(board=source_board)
+
+            old_pos = column.position
+            total = qs.count()
+
+            if total <= 0:
+                position = 0
+            else:
+                if position > total - 1:
+                    position = total - 1
+
+            if position == old_pos:
+                serializer = ColumnDetailSerializer(
+                    column, context={"request": request}
+                )
+                return Response(serializer.data, status=status.HTTP_200_OK)
+
+            if position > old_pos:
+                qs.filter(position__gt=old_pos, position__lte=position).update(
+                    position=F("position") - 1
+                )
+            else:
+                qs.filter(position__gte=position, position__lt=old_pos).update(
+                    position=F("position") + 1
+                )
+
+            column.position = position
+            column.save()
+
+        serializer = ColumnDetailSerializer(column, context={"request": request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class CardViewSet(viewsets.ModelViewSet):

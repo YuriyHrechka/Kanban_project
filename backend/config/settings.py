@@ -88,7 +88,7 @@ DATABASES = {
         "NAME": os.getenv("POSTGRES_DB", "django_db"),
         "USER": os.getenv("POSTGRES_USER", "django_user"),
         "PASSWORD": os.getenv("POSTGRES_PASSWORD", "secretpassword"),
-        "HOST": "db",
+        "HOST": os.getenv("POSTGRES_HOST", "localhost"),
         "PORT": "5432",
     }
 }
@@ -160,7 +160,4 @@ SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://localhost:5174",
-]
+CORS_ALLOW_ALL_ORIGINS = True 
