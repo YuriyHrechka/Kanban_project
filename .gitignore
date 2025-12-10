@@ -1,9 +1,41 @@
+# Environment
 .env
-.vscode/
-Thumbs.db
-.idea/
-*.swp
-*.swo
+.venv/
+
+# Python
 __pycache__/
 *.pyc
-.venv/
+*.pyo
+*.pyd
+*.swp
+*.swo
+migrations/
+db.sqlite3
+
+# Node / Frontend
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Editor directories and files
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# System files
+.DS_Store
+Thumbs.db
