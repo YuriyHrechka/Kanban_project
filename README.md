@@ -120,5 +120,7 @@ docker exec -it kanban_backend python manage.py test kanban
 │   ├── entrypoint.sh
 │   └── requirements.txt
 ├── docker-compose.yml
+├── .env
+├── .gitignore
 └── README.md
 ```
